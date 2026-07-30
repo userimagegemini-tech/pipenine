@@ -99,8 +99,17 @@ app.get('/api/retreats/:id', asyncRoute(async (req, res) => {
 
 app.post('/api/contacts', asyncRoute(async (req, res) => {
   const { name, email, message } = req.body;
-  if (!name?.trim() || !email?.trim() || !message?.trim()) return res.status(400).json({ error: 'All fields are required' });
-  res.status(201).json(await prisma.contact.create({ data: { name: name.trim(), email: email.trim(), message: message.trim() } }));
+  const cleanName = typeof name === 'string' ? name.trim() : '';
+  const cleanEmail = typeof email === 'string' ? email.trim().toLowerCase() : '';
+  const cleanMessage = typeof message === 'string' ? message.trim() : '';
+  if (!cleanName || !cleanEmail || !cleanMessage) return res.status(400).json({ error: 'Please complete every field.' });
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) return res.status(400).json({ error: 'Please enter a valid email address.' });
+  if (cleanName.length > 100 || cleanEmail.length > 200 || cleanMessage.length > 3000) {
+    return res.status(400).json({ error: 'Your submission is too long. Please shorten it and try again.' });
+  }
+  res.status(201).json(await prisma.contact.create({
+    data: { name: cleanName, email: cleanEmail, message: cleanMessage },
+  }));
 }));
 
 app.get('/api/content', asyncRoute(async (_req, res) => {

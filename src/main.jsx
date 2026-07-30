@@ -48,13 +48,35 @@ const heroSlides = [
   { eyebrow: 'Plans For Every Chapter', lines: ['Your future,', 'thoughtfully', 'protected.'], image: 'https://images.unsplash.com/photo-1500937386664-56d1dfef3854?auto=format&fit=crop&w=2000&q=90' },
 ];
 
+const defaultSite = {
+  brandName: 'MÜHLENBRUCH',
+  brandSuffix: 'INSURANCE',
+  logoUrl: '/muhlenbruch-insurance-logo.jpg',
+  tagline: 'Protection You Can Trust',
+  phone: '515-852-4156',
+  email: 'muhlenbruchinsurance@hotmail.com',
+  address: '110 East Ellsworth, Dows, Iowa',
+};
+
+function syncSiteIdentity(site) {
+  if (!site) return;
+  document.title = `${site.brandName || defaultSite.brandName} ${site.brandSuffix || defaultSite.brandSuffix}`;
+  let favicon = document.querySelector('link[rel="icon"]');
+  if (!favicon) {
+    favicon = document.createElement('link');
+    favicon.rel = 'icon';
+    document.head.appendChild(favicon);
+  }
+  favicon.href = site.logoUrl || defaultSite.logoUrl;
+}
+
 function App() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [heroIndex, setHeroIndex] = useState(0);
   const [scrolled, setScrolled] = useState(false);
   const [retreats, setRetreats] = useState(initialRetreats);
   const [cms, setCms] = useState(null);
-  const [contactSent, setContactSent] = useState(false);
+  const [contactState, setContactState] = useState({ status: 'idle', message: '' });
   const activeHeroSlides = cms?.heroSlides?.length ? cms.heroSlides.map((slide) => ({ ...slide, lines: [slide.lineOne, slide.lineTwo, slide.lineThree] })) : heroSlides;
   const displayAmenities = cms?.featureCards?.length ? cms.featureCards.map((card) => ({ ...card, text: card.description })) : amenities;
   const aboutContent = cms?.about;
@@ -70,7 +92,10 @@ function App() {
   const location = useLocation();
   useEffect(() => {
     fetch('/api/retreats').then((response) => response.ok ? response.json() : Promise.reject()).then(setRetreats).catch(() => {});
-    fetch('/api/content').then((response) => response.ok ? response.json() : Promise.reject()).then(setCms).catch(() => {});
+    fetch('/api/content').then((response) => response.ok ? response.json() : Promise.reject()).then((content) => {
+      setCms(content);
+      syncSiteIdentity(content.site);
+    }).catch(() => {});
   }, []);
   useEffect(() => {
     const updateScroll = () => setScrolled(window.scrollY >= 60);
@@ -86,12 +111,24 @@ function App() {
     if (section) requestAnimationFrame(() => document.getElementById(section)?.scrollIntoView());
     else window.scrollTo(0, 0);
   }, [location.pathname]);
-  const submitContact = (event) => {
-    event.preventDefault(); const form = event.currentTarget; const data = new FormData(form);
-    fetch('/api/contacts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(Object.fromEntries(data)) })
-      .then((response) => response.ok ? response.json() : Promise.reject())
-      .then(() => { form.reset(); setContactSent(true); })
-      .catch(() => setContactSent('error'));
+  const submitContact = async (event) => {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const data = Object.fromEntries(new FormData(form));
+    setContactState({ status: 'sending', message: 'Sending your enquiry…' });
+    try {
+      const response = await fetch('/api/contacts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(result.error || 'Unable to send your enquiry.');
+      form.reset();
+      setContactState({ status: 'success', message: 'Thank you — your enquiry was submitted successfully.' });
+    } catch (error) {
+      setContactState({ status: 'error', message: error.message || 'Unable to send your enquiry. Please try again.' });
+    }
   };
   const heroSlide = activeHeroSlides[heroIndex] || activeHeroSlides[0];
   const changeHero = (direction) => setHeroIndex((index) => (index + direction + activeHeroSlides.length) % activeHeroSlides.length);
@@ -127,7 +164,7 @@ function App() {
       <section className="story" id="sustainability"><div className="story-inner section-shell"><motion.div className="story-copy" initial="hidden" whileInView="visible" viewport={{once:true}} variants={reveal} transition={{duration:.8}}><p className="eyebrow light">OUR COMMITMENT <span></span></p><h2>Coverage that <em>works for you.</em></h2><p>We strive to provide the lowest practical costs. By learning your needs and providing personal service, we build protection that fits your budget and keeps you covered when it matters.</p><a href="#contact" className="button button-cream">Get your free quote <ArrowRight size={17}/></a></motion.div><motion.div className="story-image" initial={{opacity:0,scale:.96}} whileInView={{opacity:1,scale:1}} viewport={{once:true}} transition={{duration:1}}><img src="https://images.unsplash.com/photo-1609220136736-443140cffec6?auto=format&fit=crop&w=1400&q=90" alt="A happy family enjoying time together at home" loading="lazy"/><div className="story-stamp"><Leaf size={25}/><span>PROTECTION<br/>YOU CAN<br/>TRUST</span></div></motion.div></div></section>
       <section className="journal section-shell" id="journal"><motion.div className="journal-intro" initial="hidden" whileInView="visible" viewport={{once:true}} variants={reveal}><p className="eyebrow">LOCAL SERVICE <span></span></p><h2>People who<br/><em>know your needs.</em></h2></motion.div><motion.article initial="hidden" whileInView="visible" viewport={{once:true}} variants={reveal} transition={{delay:.15}}><p>EXPERIENCE · PERSONAL SERVICE</p><h3>Shannon Muhlenbruch, Mikyla Hefli, and Eric Bruns are here to help.</h3><a href="tel:5158524156">Call our team <ArrowRight size={16}/></a></motion.article><motion.article initial="hidden" whileInView="visible" viewport={{once:true}} variants={reveal} transition={{delay:.25}}><p>MONDAY–FRIDAY · 8AM–5PM</p><h3>Friendly guidance, free quotes, and access to more than 15 companies.</h3><a href="#contact">Request a quote <ArrowRight size={16}/></a></motion.article></section>
       {dynamicSections.map((section,index)=><DynamicWebsiteSection key={section.id} section={section} index={index}/>)}
-      <section className="contact-split section-shell" id="contact"><div className="contact-split-card" style={contactCms?.background ? {backgroundImage:`url(${contactCms.background})`} : undefined}><motion.div className="contact-split-copy" initial={{opacity:0,x:-35}} whileInView={{opacity:1,x:0}} viewport={{once:true}} transition={{duration:.8}}><p className="eyebrow light">{contactCms?.eyebrow || 'CONTACT US'} <span></span></p><h2>{contactCms?.title || 'Let’s protect'}<br/><em>{contactCms?.accentTitle || 'what you’ve built.'}</em></h2><p>{contactCms?.description || 'Tell us what matters to you. Our local team will compare options and help you find thoughtful coverage.'}</p><div className="contact-direct"><a href={`tel:${(cms?.site?.phone || '515-852-4156').replace(/\D/g,'')}`}><Phone size={17}/><span><small>CALL OUR TEAM</small>{cms?.site?.phone || '515-852-4156'}</span></a><a href={`mailto:${cms?.site?.email || 'muhlenbruchinsurance@hotmail.com'}`}><Mail size={17}/><span><small>EMAIL US</small>{cms?.site?.email || 'muhlenbruchinsurance@hotmail.com'}</span></a><a href="#contact"><MapPin size={17}/><span><small>VISIT</small>{cms?.site?.address || '110 East Ellsworth, Dows, Iowa'}</span></a></div></motion.div><motion.form className="contact-split-form" onSubmit={submitContact} initial={{opacity:0,x:35}} whileInView={{opacity:1,x:0}} viewport={{once:true}} transition={{duration:.8,delay:.12}}><p>REQUEST A FREE QUOTE</p><h3>{contactCms?.formTitle || 'How can we help?'}</h3><div><label><span>Your name</span><input name="name" required placeholder="Jane Smith"/></label><label><span>Email address</span><input name="email" type="email" required placeholder="jane@example.com"/></label></div><label><span>Your message</span><textarea name="message" required placeholder="Tell us what you would like to protect..."/></label><button type="submit">Send enquiry <ArrowUpRight size={17}/></button><small>{contactSent ? 'Thank you — our team will contact you shortly.' : 'Your information stays private and secure.'}</small></motion.form></div></section>
+      <section className="contact-split section-shell" id="contact"><div className="contact-split-card" style={contactCms?.background ? {backgroundImage:`url(${contactCms.background})`} : undefined}><motion.div className="contact-split-copy" initial={{opacity:0,x:-35}} whileInView={{opacity:1,x:0}} viewport={{once:true}} transition={{duration:.8}}><p className="eyebrow light">{contactCms?.eyebrow || 'CONTACT US'} <span></span></p><h2>{contactCms?.title || 'Let’s protect'}<br/><em>{contactCms?.accentTitle || 'what you’ve built.'}</em></h2><p>{contactCms?.description || 'Tell us what matters to you. Our local team will compare options and help you find thoughtful coverage.'}</p><div className="contact-direct"><a href={`tel:${(cms?.site?.phone || defaultSite.phone).replace(/\D/g,'')}`}><Phone size={17}/><span><small>CALL OUR TEAM</small>{cms?.site?.phone || defaultSite.phone}</span></a><a href={`mailto:${cms?.site?.email || defaultSite.email}`}><Mail size={17}/><span><small>EMAIL US</small>{cms?.site?.email || defaultSite.email}</span></a><a href="#contact"><MapPin size={17}/><span><small>VISIT</small>{cms?.site?.address || defaultSite.address}</span></a></div></motion.div><motion.form className="contact-split-form" onSubmit={submitContact} initial={{opacity:0,x:35}} whileInView={{opacity:1,x:0}} viewport={{once:true}} transition={{duration:.8,delay:.12}}><p>REQUEST A FREE QUOTE</p><h3>{contactCms?.formTitle || 'How can we help?'}</h3><div><label><span>Your name</span><input name="name" required maxLength="100" autoComplete="name" placeholder="Jane Smith"/></label><label><span>Email address</span><input name="email" type="email" required maxLength="200" autoComplete="email" placeholder="jane@example.com"/></label></div><label><span>Your message</span><textarea name="message" required maxLength="3000" placeholder="Tell us what you would like to protect..."/></label><button type="submit" disabled={contactState.status==='sending'}>{contactState.status==='sending' ? 'Sending…' : 'Send enquiry'} <ArrowUpRight size={17}/></button><small className={`form-status ${contactState.status}`} role="status">{contactState.message || 'Your information stays private and secure.'}</small></motion.form></div></section>
     </main>
     <footer className="footer-v4" style={footerCms?.background ? {'--footer-background':`url(${footerCms.background})`} : undefined}><div className="footer-v4-shell section-shell"><Link to="/" className="footer-v4-logo"><img src={cms?.site?.logoUrl || '/muhlenbruch-insurance-logo.jpg'} alt="Mühlenbruch Insurance"/><span><b>{cms?.site?.brandName || 'MÜHLENBRUCH'}</b><small>{cms?.site?.brandSuffix || 'INSURANCE'}</small></span></Link><div className="footer-v4-links">{Object.keys(footerGroups).length ? Object.entries(footerGroups).map(([group,links])=><div key={group}><small>{group}</small>{links.map((link)=><Link key={link.id} to={link.url}>{link.label}</Link>)}</div>) : <><div><small>INSURANCE</small><Link to="/insurance">All coverage</Link><Link to="/insurance/1">Auto insurance</Link><Link to="/insurance/2">Home insurance</Link></div><div><small>AGENCY</small><Link to="/about">About us</Link><Link to="/contact">Contact</Link><Link to="/admin">Admin</Link></div></>}</div><div className="footer-v4-trust"><span className="tag-pulse"></span><div><b>{cms?.site?.tagline || 'Protection you can trust'}</b><small>{footerCms?.tagline || 'Serving Iowa for more than 10 years.'}</small></div></div><div className="footer-v4-legal"><span>{footerCms?.copyright || 'Copyright © muhlenbruchinsuranceagency.com 2026'}</span><a className="footer-facebook" href={footerCms?.facebookUrl || 'https://www.facebook.com/'} target="_blank" rel="noreferrer"><b>f</b> Facebook</a><span>{cms?.site?.address || 'Dows, Iowa'} · {cms?.site?.phone || '515-852-4156'}</span></div></div></footer>
   </>;
@@ -196,6 +233,7 @@ function AdminLogin() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [configured, setConfigured] = useState(null);
+  const [site, setSite] = useState(defaultSite);
   const googleButton = useRef(null);
   const login = async (credential) => {
     setLoading(true); setError('');
@@ -230,8 +268,19 @@ function AdminLogin() {
     setup();
     return()=>{cancelled=true;};
   },[]);
+  useEffect(() => {
+    fetch('/api/content')
+      .then((response) => response.ok ? response.json() : Promise.reject())
+      .then((content) => {
+        if (content.site) {
+          setSite(content.site);
+          syncSiteIdentity(content.site);
+        }
+      })
+      .catch(() => {});
+  }, []);
   if (sessionStorage.getItem('pinehaven-admin-token')) return <Navigate to="/admin" replace />;
-  return <main className="admin-login"><Link className="admin-back" to="/">← Back to Mühlenbruch Insurance</Link><section className="google-card"><div className="google-mark logo-mark"><img src="/muhlenbruch-insurance-logo.jpg" alt="Mühlenbruch Insurance"/></div><h1>Welcome to Mühlenbruch</h1><p>Continue with an approved Google account to manage website content and enquiries.</p><div className={`google-button-host ${loading?'is-loading':''}`} ref={googleButton}>{configured===null&&!error?<span>Loading Google Sign-In…</span>:null}</div>{error&&<div className="login-error">{error}</div>}<small>Access is restricted to approved administrator accounts.</small></section></main>;
+  return <main className="admin-login"><Link className="admin-back" to="/">← Back to {site.brandName} {site.brandSuffix}</Link><section className="google-card"><div className="google-mark logo-mark"><img src={site.logoUrl || defaultSite.logoUrl} alt={`${site.brandName} ${site.brandSuffix}`}/></div><h1>Welcome to {site.brandName}</h1><p>Continue with an approved Google account to manage website content and enquiries.</p><div className={`google-button-host ${loading?'is-loading':''}`} ref={googleButton}>{configured===null&&!error?<span>Loading Google Sign-In…</span>:null}</div>{error&&<div className="login-error">{error}</div>}<small>Access is restricted to approved administrator accounts.</small></section></main>;
 }
 
 function DatabaseAdmin() {
@@ -288,19 +337,28 @@ function FullAdmin() {
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
   const load = async () => {
-    try { setData(await adminRequest('/api/admin/content')); }
+    try {
+      const content = await adminRequest('/api/admin/content');
+      setData(content);
+      syncSiteIdentity(content.site);
+    }
     catch { navigate('/admin/login', { replace: true }); }
   };
   useEffect(() => { if (!sessionStorage.getItem('pinehaven-admin-token')) navigate('/admin/login', { replace: true }); else load(); }, []);
+  useEffect(() => {
+    if (tab !== 'contact' || !sessionStorage.getItem('pinehaven-admin-token')) return undefined;
+    const refresh = window.setInterval(load, 10000);
+    return () => window.clearInterval(refresh);
+  }, [tab]);
   const logout = async () => { await adminRequest('/api/auth/logout', { method:'POST' }).catch(()=>{}); sessionStorage.removeItem('pinehaven-admin-token'); navigate('/admin/login'); };
   if (!data) return <main className="cms-loading">Loading Mühlenbruch CMS…</main>;
-  const singleton = (title, dataKey, endpoint, fields) => <SingletonEditor title={title} value={data[dataKey]} fields={fields} onSave={async (values) => { try { const saved=await adminRequest(endpoint,{method:'PUT',body:JSON.stringify(values)}); setData({...data,[dataKey]:saved}); setError(''); } catch(err){setError(err.message);} }}/>;
+  const singleton = (title, dataKey, endpoint, fields) => <SingletonEditor title={title} value={data[dataKey]} fields={fields} onSave={async (values) => { try { const saved=await adminRequest(endpoint,{method:'PUT',body:JSON.stringify(values)}); setData({...data,[dataKey]:saved}); if(dataKey==='site')syncSiteIdentity(saved); setError(''); } catch(err){setError(err.message);} }}/>;
   const menuDestinations = [
     ['/','Home / page top'],['#stays','Insurance section'],['#experiences','About Us section'],
     ['#sustainability','Commitment section'],['#journal','Agents section'],['#contact','Contact section'],
     ...(data.dynamicSections||[]).map((section)=>[`#section-${section.id}`,`${section.menuLabel} — section-${section.id}`]),
   ];
-  return <main className="cms-admin"><aside className="cms-sidebar"><Link to="/" className="cms-brand"><img src={data.site?.logoUrl || '/muhlenbruch-insurance-logo.jpg'} alt=""/><span><b>MÜHLENBRUCH</b><small>CONTENT STUDIO</small></span></Link><nav>{cmsSections.map(([key,label])=><button key={key} className={tab===key?'active':''} onClick={()=>setTab(key)}>{label}{key==='contact'&&data.contacts.length>0?<b>{data.contacts.length}</b>:null}</button>)}</nav><button className="cms-logout" onClick={logout}><LogOut size={16}/> Sign out</button></aside><section className="cms-workspace"><header className="cms-header"><div><p>WEBSITE CONTENT MANAGEMENT</p><h1>{cmsSections.find(([key])=>key===tab)?.[1]}</h1></div><a href="/" target="_blank">View website <ArrowUpRight size={16}/></a></header>{error&&<div className="cms-error">{error}</div>}{tab==='overview'&&<CmsOverview data={data} onNavigate={setTab}/>}
+  return <main className="cms-admin"><aside className="cms-sidebar"><Link to="/" className="cms-brand"><img src={data.site?.logoUrl || defaultSite.logoUrl} alt={`${data.site?.brandName || defaultSite.brandName} ${data.site?.brandSuffix || defaultSite.brandSuffix}`}/><span><b>{data.site?.brandName || defaultSite.brandName}</b><small>{data.site?.brandSuffix || defaultSite.brandSuffix} · CONTENT STUDIO</small></span></Link><nav>{cmsSections.map(([key,label])=><button key={key} className={tab===key?'active':''} onClick={()=>setTab(key)}>{label}{key==='contact'&&data.contacts.length>0?<b>{data.contacts.length}</b>:null}</button>)}</nav><button className="cms-logout" onClick={logout}><LogOut size={16}/> Sign out</button></aside><section className="cms-workspace"><header className="cms-header"><div><p>WEBSITE CONTENT MANAGEMENT</p><h1>{cmsSections.find(([key])=>key===tab)?.[1]}</h1></div><a href="/" target="_blank">View website <ArrowUpRight size={16}/></a></header>{error&&<div className="cms-error">{error}</div>}{tab==='overview'&&<CmsOverview data={data} onNavigate={setTab}/>}
   {tab==='site'&&singleton('Site identity and agency details','site','/api/admin/site',[
     ['brandName','Brand name'],['brandSuffix','Brand suffix'],['logoUrl','Logo image'],['tagline','Tagline'],['phone','Phone'],['email','Email'],['address','Address']
   ])}
@@ -324,7 +382,7 @@ function FullAdmin() {
   ])}
   {tab==='contact'&&<><div className="cms-two-panel">{singleton('Contact section content','contactContent','/api/admin/contact-content',[
     ['eyebrow','Eyebrow'],['title','Title'],['accentTitle','Accent title'],['description','Description','textarea'],['formTitle','Form title'],['background','Contact background']
-  ])}<div className="cms-panel"><div className="cms-panel-title"><div><p>SUBMISSIONS</p><h2>Contact enquiries</h2></div><span>{data.contacts.length} total</span></div><div className="cms-submissions">{data.contacts.length?data.contacts.map((contact)=><article key={contact.id}><div><b>{contact.name}</b><a href={`mailto:${contact.email}`}>{contact.email}</a></div><p>{contact.message}</p><time>{new Date(contact.createdAt).toLocaleDateString()}</time><select aria-label={`Status for ${contact.name}`} value={contact.status} onChange={async(event)=>{await adminRequest(`/api/admin/contacts/${contact.id}`,{method:'PATCH',body:JSON.stringify({status:event.target.value})});load();}}><option value="new">New</option><option value="in-progress">In progress</option><option value="resolved">Resolved</option></select><button aria-label={`Delete submission from ${contact.name}`} onClick={async()=>{if(!window.confirm('Delete this contact submission?'))return;await adminRequest(`/api/admin/contacts/${contact.id}`,{method:'DELETE'});load();}}><Trash2 size={15}/></button></article>):<div className="cms-empty">No contact submissions yet.</div>}</div></div></div></>}
+  ])}<div className="cms-panel"><div className="cms-panel-title"><div><p>SUBMISSIONS · AUTO-REFRESHES</p><h2>Contact enquiries</h2></div><button type="button" onClick={load}>Refresh · {data.contacts.length}</button></div><div className="cms-submissions">{data.contacts.length?data.contacts.map((contact)=><article key={contact.id}><div><b>{contact.name}</b><a href={`mailto:${contact.email}`}>{contact.email}</a></div><p title={contact.message}>{contact.message}</p><time>{new Date(contact.createdAt).toLocaleString()}</time><select aria-label={`Status for ${contact.name}`} value={contact.status} onChange={async(event)=>{await adminRequest(`/api/admin/contacts/${contact.id}`,{method:'PATCH',body:JSON.stringify({status:event.target.value})});load();}}><option value="new">New</option><option value="in-progress">In progress</option><option value="resolved">Resolved</option></select><button aria-label={`Delete submission from ${contact.name}`} onClick={async()=>{if(!window.confirm('Delete this contact submission?'))return;await adminRequest(`/api/admin/contacts/${contact.id}`,{method:'DELETE'});load();}}><Trash2 size={15}/></button></article>):<div className="cms-empty">No contact submissions yet.</div>}</div></div></div></>}
   {tab==='footer'&&<><div className="cms-two-panel">{singleton('Footer settings','footer','/api/admin/footer',[
     ['copyright','Copyright'],['tagline','Footer tagline'],['facebookUrl','Facebook URL'],['background','Footer background']
   ])}<CrudManager title="Footer links" items={data.footerLinks} endpoint="/api/admin/footer-links" fields={[
@@ -385,6 +443,7 @@ function InsuranceDetail() {
   const { id } = useParams();
   const [service, setService] = useState(null);
   const [missing, setMissing] = useState(false);
+  const [site, setSite] = useState(defaultSite);
   useEffect(() => {
     fetch(`/api/retreats/${id}`)
       .then((response) => response.ok ? response.json() : Promise.reject())
@@ -394,13 +453,24 @@ function InsuranceDetail() {
         if (fallback) setService(fallback); else setMissing(true);
       });
   }, [id]);
+  useEffect(() => {
+    fetch('/api/content')
+      .then((response) => response.ok ? response.json() : Promise.reject())
+      .then((content) => {
+        if (content.site) {
+          setSite(content.site);
+          syncSiteIdentity(content.site);
+        }
+      })
+      .catch(() => {});
+  }, []);
   if (missing) return <Navigate to="/insurance" replace />;
   if (!service) return <main className="detail-loading">Loading coverage details…</main>;
   const detail = insuranceDetails[service.name] || {
     intro: `Flexible ${service.name.toLowerCase()} coverage selected around your needs, priorities, and budget.`,
     benefits: ['Personal guidance from local agents', 'Plans from multiple trusted carriers', 'Flexible coverage choices', 'A free, no-pressure quote'],
   };
-  return <><header className="topbar detail-nav"><Link to="/" className="brand" aria-label="Mühlenbruch Insurance home"><img className="brand-logo" src="/muhlenbruch-insurance-logo.jpg" alt=""/><span>MÜHLENBRUCH</span><small>INSURANCE</small></Link><nav className="navlinks"><Link to="/">Home</Link><Link to="/insurance">Insurance</Link><Link to="/about">About</Link><Link to="/contact">Contact Us</Link></nav><Link to="/contact" className="button button-dark nav-cta">Get a free quote <ArrowUpRight size={16}/></Link></header><main className="insurance-detail"><section className="detail-hero section-shell"><motion.div className="detail-photo" initial={{opacity:0,scale:.97}} animate={{opacity:1,scale:1}} transition={{duration:.8}}><img src={service.image} alt={service.name}/><span>{service.bed}</span></motion.div><motion.div className="detail-copy" initial={{opacity:0,y:25}} animate={{opacity:1,y:0}} transition={{duration:.8,delay:.12}}><p className="eyebrow">MÜHLENBRUCH INSURANCE <span></span></p><Link className="detail-back" to="/insurance">← All insurance</Link><h1>{service.name}</h1><p className="detail-intro">{detail.intro}</p><div className="detail-benefits">{detail.benefits.map((benefit) => <div key={benefit}><CircleStar size={18}/><span>{benefit}</span></div>)}</div><Link to="/contact" className="button button-dark">Request your free quote <ArrowRight size={17}/></Link><p className="detail-phone">Prefer to talk? Call <a href="tel:5158524156">515-852-4156</a></p></motion.div></section><section className="detail-note"><div className="section-shell"><p className="eyebrow light">LOCAL GUIDANCE <span></span></p><h2>Coverage should feel <em>clear and personal.</em></h2><p>Our experienced agents compare options from more than 15 companies to help you find protection that fits your life and your budget.</p></div></section></main></>;
+  return <><header className="topbar detail-nav"><Link to="/" className="brand" aria-label={`${site.brandName} ${site.brandSuffix} home`}><img className="brand-logo" src={site.logoUrl || defaultSite.logoUrl} alt=""/><span>{site.brandName || defaultSite.brandName}</span><small>{site.brandSuffix || defaultSite.brandSuffix}</small></Link><nav className="navlinks"><Link to="/">Home</Link><Link to="/insurance">Insurance</Link><Link to="/about">About</Link><Link to="/contact">Contact Us</Link></nav><Link to="/contact" className="button button-dark nav-cta">Get a free quote <ArrowUpRight size={16}/></Link></header><main className="insurance-detail"><section className="detail-hero section-shell"><motion.div className="detail-photo" initial={{opacity:0,scale:.97}} animate={{opacity:1,scale:1}} transition={{duration:.8}}><img src={service.image} alt={service.name}/><span>{service.bed}</span></motion.div><motion.div className="detail-copy" initial={{opacity:0,y:25}} animate={{opacity:1,y:0}} transition={{duration:.8,delay:.12}}><p className="eyebrow">{site.brandName || defaultSite.brandName} {site.brandSuffix || defaultSite.brandSuffix} <span></span></p><Link className="detail-back" to="/insurance">← All insurance</Link><h1>{service.name}</h1><p className="detail-intro">{detail.intro}</p><div className="detail-benefits">{detail.benefits.map((benefit) => <div key={benefit}><CircleStar size={18}/><span>{benefit}</span></div>)}</div><Link to="/contact" className="button button-dark">Request your free quote <ArrowRight size={17}/></Link><p className="detail-phone">Prefer to talk? Call <a href={`tel:${(site.phone || defaultSite.phone).replace(/\D/g,'')}`}>{site.phone || defaultSite.phone}</a></p></motion.div></section><section className="detail-note"><div className="section-shell"><p className="eyebrow light">LOCAL GUIDANCE <span></span></p><h2>Coverage should feel <em>clear and personal.</em></h2><p>Our experienced agents compare options from more than 15 companies to help you find protection that fits your life and your budget.</p></div></section></main></>;
 }
 
 function RoutedApp() {
