@@ -1,0 +1,14 @@
+node_modules/
+dist/
+.env
+prisma/*.db
+prisma/*.db-journal
+*.log
+.railway/
+public/uploads/*
+!public/uploads/.gitkeep
+.agents/
+.codex/
+home1.png
+home2.png
+homw3.png

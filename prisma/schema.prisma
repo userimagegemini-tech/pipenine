@@ -1,0 +1,143 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Retreat {
+  id        Int      @id @default(autoincrement())
+  name      String
+  price     Int
+  bed       String
+  bath      String
+  image     String
+  style     String   @default("cabin")
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Contact {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String
+  message   String
+  status    String   @default("new")
+  createdAt DateTime @default(now())
+}
+
+model SiteSetting {
+  id          Int      @id @default(1)
+  brandName   String   @default("MÜHLENBRUCH")
+  brandSuffix String   @default("INSURANCE")
+  logoUrl     String   @default("/muhlenbruch-insurance-logo.jpg")
+  tagline     String   @default("Protection You Can Trust")
+  phone       String   @default("515-852-4156")
+  email       String   @default("muhlenbruchinsurance@hotmail.com")
+  address     String   @default("110 East Ellsworth, Dows, Iowa")
+  updatedAt   DateTime @updatedAt
+}
+
+model HeroSlide {
+  id        Int      @id @default(autoincrement())
+  eyebrow   String
+  lineOne   String
+  lineTwo   String
+  lineThree String
+  image     String
+  sortOrder Int      @default(0)
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model FeatureCard {
+  id          Int      @id @default(autoincrement())
+  title       String
+  description String
+  image       String   @default("")
+  ctaLabel    String
+  ctaUrl      String   @default("/contact")
+  sortOrder   Int      @default(0)
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model AboutContent {
+  id          Int      @id @default(1)
+  eyebrow     String
+  title       String
+  accentTitle String
+  description String
+  image       String
+  bulletOne   String
+  bulletTwo   String
+  bulletThree String
+  bulletFour  String
+  updatedAt   DateTime @updatedAt
+}
+
+model ContactContent {
+  id          Int      @id @default(1)
+  eyebrow     String
+  title       String
+  accentTitle String
+  description String
+  formTitle   String
+  background  String
+  updatedAt   DateTime @updatedAt
+}
+
+model FooterSetting {
+  id          Int      @id @default(1)
+  copyright   String
+  tagline     String
+  facebookUrl String
+  background  String
+  updatedAt   DateTime @updatedAt
+}
+
+model FooterLink {
+  id        Int      @id @default(autoincrement())
+  groupName String
+  label     String
+  url       String
+  sortOrder Int      @default(0)
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model DynamicSection {
+  id          Int      @id @default(autoincrement())
+  menuLabel   String
+  eyebrow     String
+  title       String
+  accentTitle String
+  description String
+  image       String   @default("")
+  buttonLabel String   @default("Learn more")
+  buttonUrl   String   @default("/contact")
+  imageSide   String   @default("left")
+  sortOrder   Int      @default(0)
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  menuItems   MenuItem[]
+}
+
+model MenuItem {
+  id        Int             @id @default(autoincrement())
+  label     String
+  url       String
+  sectionId Int?
+  section   DynamicSection? @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  sortOrder Int             @default(0)
+  active    Boolean         @default(true)
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+}
