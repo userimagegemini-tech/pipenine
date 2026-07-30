@@ -1,0 +1,13 @@
+node_modules
+dist
+.git
+.env
+*.log
+prisma/*.db
+prisma/*.db-journal
+public/uploads/*
+!public/uploads/.gitkeep
+.agents
+home1.png
+home2.png
+homw3.png

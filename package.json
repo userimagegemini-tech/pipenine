@@ -18,20 +18,20 @@
   },
   "dependencies": {
     "@prisma/client": "^6.19.0",
-    "@vitejs/plugin-react": "latest",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
-    "framer-motion": "latest",
     "google-auth-library": "^10.9.1",
+    "prisma": "^6.19.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "latest",
+    "concurrently": "^10.0.4",
+    "framer-motion": "latest",
     "lucide-react": "latest",
-    "prisma": "^6.19.0",
     "react": "latest",
     "react-dom": "latest",
     "react-router-dom": "^7.18.2",
     "vite": "latest"
-  },
-  "devDependencies": {
-    "concurrently": "^10.0.4"
   }
 }
