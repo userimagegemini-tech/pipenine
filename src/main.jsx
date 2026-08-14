@@ -79,12 +79,7 @@ function App() {
   const [cms, setCms] = useState(null);
   const [contactState, setContactState] = useState({ status: 'idle', message: '' });
   const [contactErrors, setContactErrors] = useState({});
-  const configuredHeroSlides = cms?.heroSlides?.length ? cms.heroSlides : heroSlides;
-  const activeHeroSlides = configuredHeroSlides.map((slide, index) => ({
-    ...slide,
-    eyebrow: index === 0 && cms?.site?.tagline?.trim() ? cms.site.tagline.trim() : slide.eyebrow,
-    lines: getHeroHeadingLines(slide),
-  }));
+  const activeHeroSlides = cms?.heroSlides?.length ? cms.heroSlides.map((slide) => ({ ...slide, lines: getHeroHeadingLines(slide) })) : heroSlides;
   const displayAmenities = cms?.featureCards?.length ? cms.featureCards.map((card) => ({ ...card, text: card.description })) : amenities;
   const aboutContent = cms?.about;
   const localService = cms?.localService;
