@@ -15,6 +15,13 @@ model Retreat {
   bath      String
   image     String
   style     String   @default("cabin")
+  detailDescription String @default("")
+  benefitOne        String @default("")
+  benefitTwo        String @default("")
+  benefitThree      String @default("")
+  benefitFour       String @default("")
+  quoteLabel        String @default("Request your free quote")
+  quoteUrl          String @default("/contact")
   active    Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -24,8 +31,10 @@ model Contact {
   id        Int      @id @default(autoincrement())
   name      String
   email     String
+  phone     String   @default("")
   message   String
   status    String   @default("new")
+  viewed    Boolean  @default(false)
   createdAt DateTime @default(now())
 }
 
@@ -38,6 +47,7 @@ model SiteSetting {
   phone       String   @default("515-852-4156")
   email       String   @default("muhlenbruchinsurance@hotmail.com")
   address     String   @default("110 East Ellsworth, Dows, Iowa")
+  notificationEmails String @default("")
   updatedAt   DateTime @updatedAt
 }
 
@@ -79,6 +89,22 @@ model AboutContent {
   bulletThree String
   bulletFour  String
   updatedAt   DateTime @updatedAt
+}
+
+model LocalServiceContent {
+  id              Int      @id @default(1)
+  eyebrow         String
+  title           String
+  accentTitle     String
+  firstMeta       String
+  firstTitle      String
+  firstLinkLabel  String
+  firstLinkUrl    String
+  secondMeta      String
+  secondTitle     String
+  secondLinkLabel String
+  secondLinkUrl   String
+  updatedAt       DateTime @updatedAt
 }
 
 model ContactContent {

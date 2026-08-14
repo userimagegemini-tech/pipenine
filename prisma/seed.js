@@ -12,10 +12,27 @@ const services = [
   ['Workers Compensation', 'Business coverage', 'Worker protection', 'https://images.unsplash.com/photo-1504917595217-d4dc5ebe6122?auto=format&fit=crop&w=900&q=85', 'lodge'],
   ['Crop Insurance', 'Farm protection', 'Local expertise', 'https://images.unsplash.com/photo-1500937386664-56d1dfef3854?auto=format&fit=crop&w=900&q=85', 'treehouse'],
 ];
+const serviceDetails = {
+  'Auto Insurance': ['Stay protected wherever the road takes you with coverage built around your vehicle, driving habits, and budget.', 'Liability and collision options', 'Comprehensive vehicle protection', 'Uninsured motorist coverage', 'Flexible deductibles and premiums'],
+  'Home Insurance': ['Protect your home, personal belongings, and financial security with a policy tailored to the way you live.', 'Dwelling and property coverage', 'Personal belongings protection', 'Personal liability options', 'Additional living expenses'],
+  'Recreational Vehicles': ['Enjoy every journey with dependable protection for your camper, motorhome, trailer, or recreational vehicle.', 'Collision and comprehensive coverage', 'Roadside assistance options', 'Personal property protection', 'Vacation liability coverage'],
+  'Pet Insurance': ['Prepare for unexpected veterinary expenses with practical coverage for the four-legged members of your family.', 'Accident and illness options', 'Emergency veterinary care', 'Diagnostic and treatment coverage', 'Plans for different life stages'],
+  'Dental Service': ['Maintain a healthy smile with dental plans designed for individuals and families.', 'Preventive care coverage', 'Basic and major services', 'Individual and family options', 'Access to trusted providers'],
+  Disability: ['Protect your income and financial stability when an illness or injury keeps you from working.', 'Short-term disability options', 'Long-term income protection', 'Custom benefit periods', 'Coverage tailored to your occupation'],
+  'Health Insurance': ['Find health coverage that balances dependable benefits, provider access, and affordable premiums.', 'Individual and family plans', 'Preventive care benefits', 'Prescription coverage options', 'Multiple carrier comparisons'],
+  'Workers Compensation': ['Help protect your employees and business with workers compensation coverage suited to your operation.', 'Workplace injury protection', 'Medical expense coverage', 'Lost wage benefits', 'Employer liability protection'],
+  'Crop Insurance': ['Safeguard your operation against unpredictable weather, yield loss, and changing market conditions.', 'Yield and revenue protection', 'Weather-related loss coverage', 'Policies suited to your acreage', 'Local agricultural expertise'],
+};
 
 if (await prisma.retreat.count() === 0) {
   await prisma.retreat.createMany({
     data: services.map(([name, bed, bath, image, style]) => ({ name, price: 0, bed, bath, image, style })),
+  });
+}
+for (const [name, [detailDescription, benefitOne, benefitTwo, benefitThree, benefitFour]] of Object.entries(serviceDetails)) {
+  await prisma.retreat.updateMany({
+    where: { name, detailDescription: '' },
+    data: { detailDescription, benefitOne, benefitTwo, benefitThree, benefitFour, quoteLabel: 'Request your free quote', quoteUrl: '/contact' },
   });
 }
 await prisma.siteSetting.upsert({
@@ -41,6 +58,10 @@ if (await prisma.featureCard.count() === 0) {
 await prisma.aboutContent.upsert({
   where: { id: 1 }, update: {},
   create: { id: 1, eyebrow: 'ABOUT US', title: 'Experienced agents', accentTitle: 'working for you.', description: 'For over 10 years, our insurance agency has worked with many national and regional insurance companies to offer you the best prices and coverage available.', image: '/about-agent.png', bulletOne: 'Customized insurance plans', bulletTwo: 'Plenty of add-ons to choose from', bulletThree: 'Low premiums that work for your budget', bulletFour: 'Personal service Monday–Friday, 8am–5pm' },
+});
+await prisma.localServiceContent.upsert({
+  where: { id: 1 }, update: {},
+  create: { id: 1, eyebrow: 'LOCAL SERVICE', title: 'People who', accentTitle: 'know your needs.', firstMeta: 'EXPERIENCE · PERSONAL SERVICE', firstTitle: 'Shannon Muhlenbruch, Mikyla Hefli, and Eric Bruns are here to help.', firstLinkLabel: 'Call our team', firstLinkUrl: 'tel:5158524156', secondMeta: 'MONDAY–FRIDAY · 8AM–5PM', secondTitle: 'Friendly guidance, free quotes, and access to more than 15 companies.', secondLinkLabel: 'Request a quote', secondLinkUrl: '#contact' },
 });
 await prisma.contactContent.upsert({
   where: { id: 1 }, update: {},
