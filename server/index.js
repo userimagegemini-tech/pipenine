@@ -84,11 +84,15 @@ const allowChatRequest = (ip) => {
   return true;
 };
 const sendContactNotification = async (contact, site) => {
-  const configuredRecipients = [
-    ...parseEmailList(sendGridToEmail),
-    ...parseEmailList(site?.notificationEmails),
-  ];
-  const recipients = [...new Set(configuredRecipients.length ? configuredRecipients : parseEmailList(site?.email))];
+  const siteRecipients = parseEmailList(site?.notificationEmails);
+  const fallbackRecipients = parseEmailList(sendGridToEmail);
+  const recipients = [...new Set(
+    siteRecipients.length
+      ? siteRecipients
+      : fallbackRecipients.length
+        ? fallbackRecipients
+        : parseEmailList(site?.email),
+  )];
   if (!sendGridApiKey || !sendGridFromEmail || !recipients.length) return false;
   const personalizations = {
     to: recipients.map((email) => ({ email })),
